@@ -420,3 +420,17 @@ assert null*.make == null
 
 ### Imports引入 ###
 导入方式及操作和Java一样.
+
+### 脚本与类 ###
+相对于传统Java类,一个包含main方法的Groovy类可以如下书写:
+```
+class Main {                                    
+    static void main(String... args) {          
+        println 'Groovy world!'                 
+    }
+}
+```
+和Java一样,程序会从这个类的main方法开始执行,这是Groovy代码的一种写法,
+
+## 闭包 ##
+Groovy的闭包(closure)是一个非常重要的概念,
