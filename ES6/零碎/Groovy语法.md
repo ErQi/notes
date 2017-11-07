@@ -433,4 +433,177 @@ class Main {
 和Java一样,程序会从这个类的main方法开始执行,这是Groovy代码的一种写法,
 
 ## 闭包 ##
-Groovy的闭包(closure)是一个非常重要的概念,
+Groovy的闭包(closure)是一个非常重要的概念,闭包是可以用作方法参数的代码块,Groovy的闭包更像是一个代码块或者方法指针,代码在某处被定义然后在其后的调用处执行.
+
+### 语法 ###
+**定义一个闭包**
+```
+{ [closureParameters -> ] statements }
+
+//[closureparameters -> ]是可选的逗号分隔的参数列表，参数类似于方法的参数列表，这些参数可以是类型化或非类型化的。
+
+//最基本的闭包
+{ item++ }                                          
+//使用->将参数与代码分离
+{ -> item++ }                                       
+//使用隐含参数it（后面有介绍）
+{ println it }                                      
+//使用明确的参数it替代
+{ it -> println it }                                
+//使用显示的名为参数
+{ name -> println name }                            
+//接受两个参数的闭包
+{ String x, int y ->                                
+    println "hey ${x} the value is ${y}"
+}
+//包含一个参数多个语句的闭包
+{ reader ->                                         
+    def line = reader.readLine()
+    line.trim()
+}
+```
+**闭包对象**
+一个闭包其实就是一个groovy.lang.Closure类型的实例,如下.
+```
+//定义一个Closure类型的闭包
+def listener = { e -> println "Clicked on $e.source" }      
+assert listener instanceof Closure
+//定义直接指定为Closure类型的闭包
+Closure callback = { println 'Done!' }                      
+Closure<Boolean> isTextFile = {
+    File it -> it.name.endsWith('.txt')                     
+}
+```
+**调用闭包**
+闭包和C语言的函数指针十分相似,定义好的闭包有如下两种调用形式:
+- 闭包对象.call(参数)
+- 闭包对象(参数)
+
+如下给出的例子
+```
+def code = { 123 }
+assert code() == 123
+assert code.call() == 123
+
+def isOdd = { int i-> i%2 == 1 }                            
+assert isOdd(3) == true                                     
+assert isOdd.call(2) == false
+```
+特别注意，如果闭包没定义参数则默认隐含一个名为it的参数，如下例子：
+```
+def isEven = { it%2 == 0 }                                  
+assert isEven(3) == false                                   
+assert isEven.call(2) == true 
+```
+
+### 参数 ###
+**普通参数**
+闭包的普通参数定义有三可定义,一需遵守.如下:
+- 可定义参数类型
+- 可定义参数名
+- 可定义参数默认值
+- 参数之间需用逗号隔开
+
+如下例子:
+```
+def closureWithOneArg = { str -> str.toUpperCase() }
+assert closureWithOneArg('groovy') == 'GROOVY'
+
+def closureWithOneArgAndExplicitType = { String str -> str.toUpperCase() }
+assert closureWithOneArgAndExplicitType('groovy') == 'GROOVY'
+
+def closureWithTwoArgs = { a,b -> a+b }
+assert closureWithTwoArgs(1,2) == 3
+
+def closureWithTwoArgsAndExplicitTypes = { int a, int b -> a+b }
+assert closureWithTwoArgsAndExplicitTypes(1,2) == 3
+
+def closureWithTwoArgsAndOptionalTypes = { a, int b -> a+b }
+assert closureWithTwoArgsAndOptionalTypes(1,2) == 3
+
+def closureWithTwoArgAndDefaultValue = { int a, int b=2 -> a+b }
+assert closureWithTwoArgAndDefaultValue(1) == 3
+```
+
+**隐含参数**
+当一个闭包没有显示定义一个参数列表时,闭包总是有一个隐式的it参数.
+```
+def greeting = { "Hello, $it!" }
+assert greeting('Patrick') == 'Hello, Patrick!'
+```
+当然想声明一个不接受任何参数的闭包,且必须限定没有参数的调用,name必须声明为一个空参列表.
+```
+def magicNumber = { -> 42 }
+// this call will fail because the closure doesn't accept any argument
+magicNumber(11)
+```
+
+**可变长参数**
+Groovy的闭包还支持最后一个参数为不定长可变长度参数.如下.
+```
+def concat1 = { String... args -> args.join('') }           
+assert concat1('abc','def') == 'abcdef'                     
+def concat2 = { String[] args -> args.join('') }            
+assert concat2('abc', 'def') == 'abcdef'
+
+def multiConcat = { int n, String... args ->                
+    args.join('')*n
+}
+assert multiConcat(2, 'abc','def') == 'abcdefabcdef'
+```
+
+### 闭包省略调用 ###
+很多方法最后一个参数都是闭包,我们可以在调用时进行略写括号.如下:
+```
+def debugClosure(int num, String str, Closure closure){  
+      //dosomething  
+}  
+
+debugClosure(1, "groovy", {  
+   println"hello groovy!"  
+})
+```
+当闭包作为方法或闭包的最后一个参数时,我们可以将闭包从参数圆括号中提取出来接在最后.如果闭包参数时唯一的一个参数,则闭包或方法参数所在的圆括号也可以省略,对于有多个闭包参数的,只要是在参数声明最后的,均可按上述方式省略.
+
+## GDK(Groovy Development Kit) ##
+
+Groovy除了可以直接使用Java的JDK以外还有自己的一套GDK，其实也就是对JDK的一些类的二次封装罢了；一样，这是[GDK官方API文档](http://www.groovy-lang.org/gdk.html)，写代码中请自行查阅.
+
+### 读文件操作 ###
+例子:
+```
+//读文件打印脚本
+new File('/home/temp', 'haiku.txt').eachLine { line ->
+    println line
+}
+
+//读文件打印及打印行号脚本
+new File(baseDir, 'haiku.txt').eachLine { line, nb ->
+    println "Line $nb: $line"
+}
+```
+这是一个读文件打印每行的脚本,eachline方法时GDK中的File方法,eachLine的参数是一个闭包,这里采用了简写方式.
+
+我们再看几个关于读文件的操作.
+```
+//把读到的文件行内容全部存入List列表中
+def list = new File(baseDir, 'haiku.txt').collect {it}
+//把读到的文件行内容全部存入String数组列表中
+def array = new File(baseDir, 'haiku.txt') as String[]
+//把读到的文件内容全部转存为byte数组
+byte[] contents = file.bytes
+
+//把读到的文件转为InputStream，切记此方式需要手动关闭流
+def is = new File(baseDir,'haiku.txt').newInputStream()
+// do something ...
+is.close()
+
+//把读到的文件以InputStream闭包操作，此方式不需要手动关闭流
+new File(baseDir,'haiku.txt').withInputStream { stream ->
+    // do something ...
+}
+```
+介绍了一些常见的文件读取操作,其他的具体参见API和GDK.
+
+### 写文件操作 ###
+下面是几个写操作的例子,如下.
