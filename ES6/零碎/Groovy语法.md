@@ -607,3 +607,55 @@ new File(baseDir,'haiku.txt').withInputStream { stream ->
 
 ### 写文件操作 ###
 下面是几个写操作的例子,如下.
+```
+//向一个文件以utf-8编码写三行文字
+new File(baseDir,'haiku.txt').withWriter('utf-8') { writer ->
+    writer.writeLine 'Into the ancient pond'
+    writer.writeLine 'A frog jumps'
+    writer.writeLine 'Water’s sound!'
+}
+//上面的写法可以直接替换为此写法
+new File(baseDir,'haiku.txt') << '''Into the ancient pond
+A frog jumps
+Water’s sound!'''
+//直接以byte数组形式写入文件
+file.bytes = [66,22,11]
+//类似上面读操作，可以使用OutputStream进行输出流操作，记得手动关闭
+def os = new File(baseDir,'data.bin').newOutputStream()
+// do something ...
+os.close()
+//类似上面读操作，可以使用OutputStream闭包进行输出流操作，不用手动关闭
+new File(baseDir,'data.bin').withOutputStream { stream ->
+    // do something ...
+}
+```
+
+### 文件数操作 ###
+在脚本环境中，遍历一个文件树是很常见的需求，Groovy提供了多种方法来满足这个需求。如下：
+```
+//遍历所有指定路径下文件名打印
+dir.eachFile { file ->                      
+    println file.name
+}
+//遍历所有指定路径下符合正则匹配的文件名打印
+dir.eachFileMatch(~/.*\.txt/) { file ->     
+    println file.name
+}
+//深度遍历打印名字
+dir.eachFileRecurse { file ->                      
+    println file.name
+}
+//深度遍历打印名字，只包含文件类型
+dir.eachFileRecurse(FileType.FILES) { file ->      
+    println file.name
+}
+//允许设置特殊标记规则的遍历操作
+dir.traverse { file ->
+    if (file.directory && file.name=='bin') {
+        FileVisitResult.TERMINATE                   
+    } else {
+        println file.name
+        FileVisitResult.CONTINUE                    
+    }
+}
+```
